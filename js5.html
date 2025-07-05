@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Memory Match Game</title>
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: 'Fredoka', sans-serif;
+      background: linear-gradient(135deg, #fceabb, #ff4081);
+      min-height: 100vh;
+    }
+
+    .view {
+      display: none;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      flex-direction: column;
+      animation: fadeIn 0.5s ease;
+    }
+
+    .view.active {
+      display: flex;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Start Screen */
+    .start-screen {
+      background: linear-gradient(135deg, #ffecd2, #fcb69f);
+    }
+
+    .start-screen h1 {
+      font-size: 2.2rem;
+      margin-bottom: 20px;
+      color: #333;
+    }
+
+    .start-screen input {
+      padding: 12px 18px;
+      font-size: 1rem;
+      border: 2px solid #ccc;
+      border-radius: 10px;
+      width: 250px;
+      margin-bottom: 20px;
+    }
+
+    .start-screen button {
+      padding: 12px 28px;
+      background: linear-gradient(45deg, #1e90ff, #00bcd4);
+      color: white;
+      border: none;
+      border-radius: 12px;
+      font-size: 1rem;
+      font-weight: bold;
+      cursor: pointer;
+      transition: background 0.3s, transform 0.2s;
+    }
+
+    .start-screen button:hover {
+      background: linear-gradient(45deg, #00bcd4, #1e90ff);
+      transform: scale(1.05);
+    }
+
+    /* Game Styles */
+    .game-screen h1 {
+      color: #333;
+      font-size: 2.5rem;
+      margin-bottom: 10px;
+    }
+
+    .welcome-player {
+      font-size: 1.2rem;
+      margin-bottom: 15px;
+      color: #444;
+    }
+
+    .game-board {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+      gap: 15px;
+      max-width: 420px;
+      margin: 20px auto;
+      padding: 10px;
+    }
+
+    .card {
+      width: 80px;
+      height: 80px;
+      background: #1e90ff;
+      color: white;
+      font-size: 2rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      user-select: none;
+      border-radius: 15px;
+      transition: transform 0.3s, background 0.3s;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    }
+
+    .card:hover {
+      transform: scale(1.05);
+      background: #298dff;
+    }
+
+    .card.matched {
+      background: #2ecc71;
+      cursor: default;
+      transform: scale(1);
+    }
+
+    #restart, #changePlayer {
+      margin-top: 20px;
+      padding: 12px 30px;
+      background-color: #fcb69f;
+      color: white;
+      border: none;
+      border-radius: 20px;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: background 0.3s, transform 0.2s;
+      margin-right: 10px;
+    }
+
+    #restart:hover, #changePlayer:hover {
+      background-color: #fcb69f;
+      transform: scale(1.05);
+    }
+
+    /* Modal */
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      height: 100%;
+      width: 100%;
+      background: rgba(0, 0, 0, 0.7);
+      justify-content: center;
+      align-items: center;
+      z-index: 999;
+    }
+
+    .modal-content {
+      background: #fff;
+      padding: 30px;
+      border-radius: 15px;
+      text-align: center;
+      max-width: 300px;
+    }
+
+    .modal-content h2 {
+      margin-top: 0;
+    }
+
+    .modal-content button {
+      margin: 10px 5px 0 5px;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 10px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    #playAgain {
+      background-color: #1e90ff;
+      color: white;
+    }
+
+    #changePlayerModal {
+      background-color: #fcb69f;
+      color: white;
+    }
+
+    @media (max-width: 500px) {
+      .card {
+        width: 70px;
+        height: 70px;
+        font-size: 1.5rem;
+      }
+
+      .game-board {
+        gap: 10px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Start Screen -->
+  <div class="view start-screen active" id="startScreen">
+    <h1>🎮 Who's playing?</h1>
+    <input type="text" id="playerNameInput" placeholder="Enter your name" />
+    <button onclick="startGame()">Start Game</button>
+  </div>
+
+  <!-- Game Screen -->
+  <div class="view game-screen" id="gameScreen">
+    <h1>🧠 Memory Match Game</h1>
+    <div class="welcome-player" id="playerGreeting"></div>
+    <div class="game-board"></div>
+    <div>
+      <button id="restart">🔄 Restart</button>
+      <button id="changePlayer">👤 Change Player</button>
+    </div>
+  </div>
+
+  <!-- Win Modal -->
+  <div id="gameEndModal" class="modal">
+    <div class="modal-content">
+      <h2>🎉 Congratulations!</h2>
+      <p id="endMessage"></p>
+      <button id="playAgain">Play Again</button>
+      <button id="changePlayerModal" id="playAgain">Change Player</button>
+    </div>
+  </div>
+
+  <script>
+    const startScreen = document.getElementById('startScreen');
+    const gameScreen = document.getElementById('gameScreen');
+    const gameBoard = document.querySelector('.game-board');
+    const playerGreeting = document.getElementById('playerGreeting');
+    const restartBtn = document.getElementById('restart');
+    const changePlayerBtn = document.getElementById('changePlayer');
+    const playAgainBtn = document.getElementById('playAgain');
+    const changePlayerModalBtn = document.getElementById('changePlayerModal');
+    const gameEndModal = document.getElementById('gameEndModal');
+    const endMessage = document.getElementById('endMessage');
+
+    let cardValues = ['🍕', '🍕', '🍔', '🍔', '🍟', '🍟', '🌮', '🌮', '🍣', '🍣', '🍩', '🍩', '🍉', '🍉', '🍪', '🍪'];
+    let firstCard = null;
+    let lock = false;
+    let username = '';
+
+    function shuffle(array) {
+      array.sort(() => 0.5 - Math.random());
+    }
+
+    function showView(view) {
+      document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+      view.classList.add('active');
+    }
+
+    function startGame() {
+      const input = document.getElementById("playerNameInput").value.trim();
+      if (!input) 
+      return alert("Please enter your name!");
+      username = input;
+      localStorage.setItem('memoryGameUser', username);
+      playerGreeting.textContent = `Good luck, ${username}! 🍀`;
+      showView(gameScreen);
+      createBoard();
+    }
+
+    function checkWinCondition() {
+      const allMatched = document.querySelectorAll('.card.matched').length;
+      if (allMatched === cardValues.length) {
+        endMessage.textContent = `Awesome job, ${username}! You matched them all! 🎊`;
+        gameEndModal.style.display = 'flex';
+      }
+    }
+
+    function createBoard() {
+      gameBoard.innerHTML = '';
+      gameEndModal.style.display = 'none';
+      firstCard = null;
+      lock = false;
+      shuffle(cardValues);
+
+      cardValues.forEach((emoji) => {
+        const card = document.createElement('div');
+        card.classList.add('card');
+        card.dataset.value = emoji;
+        card.textContent = '❓';
+        gameBoard.appendChild(card);
+
+        card.addEventListener('click', () => {
+          if (lock || card.classList.contains('matched') || card === firstCard) return;
+          card.textContent = emoji;
+
+          if (!firstCard) {
+            firstCard = card;
+          } else {
+            if (firstCard.dataset.value === card.dataset.value) {
+              firstCard.classList.add('matched');
+              card.classList.add('matched');
+              firstCard = null;
+              checkWinCondition();
+            } else {
+              lock = true;
+              const secondCard = card;
+              setTimeout(() => {
+                firstCard.textContent = '❓';
+                secondCard.textContent = '❓';
+                lock = false;
+                firstCard = null;
+              }, 800);
+            }
+          }
+        });
+      });
+    }
+
+    restartBtn.addEventListener('click', createBoard);
+    playAgainBtn.addEventListener('click', createBoard);
+
+    [changePlayerBtn, changePlayerModalBtn].forEach(btn => {
+      btn.addEventListener('click', () => {
+        localStorage.removeItem('memoryGameUser');
+        document.getElementById("playerNameInput").value = '';
+        showView(startScreen);
+      });
+    });
+
+    // Auto-fill name if already saved
+    const storedUser = localStorage.getItem('memoryGameUser');
+    if (storedUser) {
+      username = storedUser;
+      document.getElementById("playerNameInput").value = username;
+      playerGreeting.textContent = `Good luck, ${username}! 🍀`;
+      showView(gameScreen);
+      createBoard();
+    }
+  </script>
+
+</body>
+</html>
